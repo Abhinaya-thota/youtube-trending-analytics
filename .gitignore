@@ -1,0 +1,10 @@
+# Datasets - too large for GitHub, see README for sources
+data/
+*.csv
+
+# Byte-compiled / cache
+__pycache__/
+
+# OS / editor
+.DS_Store
+.vscode/
