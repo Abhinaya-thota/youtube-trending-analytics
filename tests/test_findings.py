@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 import findings_check as fc
+import trending
 from conftest import load_script
 
 clean_older = load_script("03_clean_older_us_dataset.py")
@@ -22,7 +23,7 @@ def raw():
 
 
 def test_peak_per_video(raw):
-    v = fc.peak_per_video(raw).set_index("video_id")
+    v = trending.peak_per_video(raw).set_index("video_id")
     assert list(v.index.sort_values()) == ["v1", "v2"]
     assert v.loc["v1", "view_count"] == 1000
     assert v.loc["v1", "engagement"] == pytest.approx(6.0)  # (50 + 0 + 10) / 1000 * 100
@@ -32,15 +33,15 @@ def test_peak_per_video(raw):
 
 
 def test_aggregations(raw):
-    v = fc.peak_per_video(raw)
-    cat = fc.by_category(v, min_videos=1)
+    v = trending.peak_per_video(raw)
+    cat = trending.by_category(v, min_videos=1)
     assert list(cat.index) == ["Music", "Comedy"]  # ranked by total views
-    assert fc.by_category(v, min_videos=2).empty
+    assert trending.by_category(v, min_videos=2).empty
 
-    day = fc.by_weekday(v)
+    day = trending.by_weekday(v)
     assert day["Fri"] == pytest.approx(6.0)
     assert day["Mon"] == pytest.approx(15.0)
-    assert fc.best_day_per_year(v) == {2021: ("Mon", pytest.approx(15.0))}
+    assert trending.best_day_per_year(v) == {2021: ("Mon", pytest.approx(15.0))}
 
 
 def test_main_runs_end_to_end(raw, tmp_path, capsys):

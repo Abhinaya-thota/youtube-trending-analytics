@@ -6,56 +6,12 @@ Usage:  python findings_check.py [path/to/US_youtube_trending_data.csv] [--min-v
 
 Method: one row per video (its peak view count), engagement rate defined as in the Tableau
 workbook: (likes + dislikes + comments) / views * 100. Publish day/hour are UTC (publishedAt).
+The calculations live in trending.py.
 """
 import argparse
 import sys
 
-import pandas as pd
-
-CATEGORIES = {1: "Film & Animation", 2: "Autos & Vehicles", 10: "Music", 15: "Pets & Animals",
-              17: "Sports", 19: "Travel & Events", 20: "Gaming", 22: "People & Blogs",
-              23: "Comedy", 24: "Entertainment", 25: "News & Politics", 26: "Howto & Style",
-              27: "Education", 28: "Science & Technology", 29: "Nonprofits & Activism"}
-DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-COLUMNS = ["video_id", "categoryId", "publishedAt", "view_count", "likes", "dislikes", "comment_count"]
-
-
-def load(path):
-    return pd.read_csv(path, usecols=COLUMNS, low_memory=False)
-
-
-def peak_per_video(df):
-    """One row per video (the row with its highest view count), with derived columns."""
-    df = df[df.view_count > 0]
-    v = df.sort_values("view_count").groupby("video_id").tail(1).copy()
-    v["engagement"] = (v.likes + v.dislikes + v.comment_count) / v.view_count * 100
-    v["category"] = v.categoryId.map(CATEGORIES)
-    v["published"] = pd.to_datetime(v.publishedAt, utc=True, errors="coerce")
-    v["weekday"] = v.published.dt.dayofweek
-    v["year"] = v.published.dt.year
-    return v
-
-
-def by_category(v, min_videos=200):
-    cat = v.groupby("category").agg(videos=("engagement", "size"),
-                                    total_views_billions=("view_count", lambda s: s.sum() / 1e9),
-                                    mean_engagement=("engagement", "mean"))
-    return cat[cat.videos >= min_videos].sort_values("total_views_billions", ascending=False)
-
-
-def by_weekday(v):
-    day = v.dropna(subset=["weekday"]).groupby("weekday").engagement.mean()
-    day.index = [DAYS[int(i)] for i in day.index]
-    return day
-
-
-def best_day_per_year(v):
-    """{year: (day name, mean engagement)} for the best publish day in each year."""
-    out = {}
-    for year, g in v.dropna(subset=["year"]).groupby("year"):
-        d = g.groupby("weekday").engagement.mean()
-        out[int(year)] = (DAYS[int(d.idxmax())], d.max())
-    return out
+from trending import best_day_per_year, by_category, by_weekday, load, peak_per_video
 
 
 def main(argv=None):

@@ -2,7 +2,10 @@
 Splits a large CSV into chunks under a size limit, repeating the header in each chunk,
 so the file can be uploaded to Snowflake.
 
-Usage:  python 01_split_large_csv.py [input.csv] [--max-mb 200] [--prefix part_] [--out-dir .]
+Usage:  python 01_split_large_csv.py [input.csv] [--max-mb 200] [--prefix US_part_] [--out-dir .]
+
+Start the prefix with the country code (e.g. US_part_): sql/02_load_raw.sql reads the country
+from the first two letters of each file name.
 
 Records are parsed with the csv module rather than read line by line: the trending data has
 video descriptions containing newlines inside quoted fields, and a naive line split can cut
