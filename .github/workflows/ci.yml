@@ -20,3 +20,9 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: pytest -q
+      - name: Run the scripts on synthetic data
+        run: |
+          python make_sample_data.py --videos 300
+          python findings_check.py data/sample/US_youtube_trending_data.csv --min-videos 10
+          python sentiment_analysis.py data/sample/US_youtube_trending_data.csv
+          python compare_countries.py data/sample
