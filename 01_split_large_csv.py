@@ -1,33 +1,76 @@
-import os
+"""
+Splits a large CSV into chunks under a size limit, repeating the header in each chunk,
+so the file can be uploaded to Snowflake.
 
-input_file = "US_youtube_trending_data.csv"
-output_prefix = "part_"
-max_size_mb = 200  # each file < 250MB to be safe
+Usage:  python 01_split_large_csv.py [input.csv] [--max-mb 200] [--prefix US_part_] [--out-dir .]
 
-# Get header
-with open(input_file, 'r', encoding='utf-8') as f:
-    header = f.readline()
+Start the prefix with the country code (e.g. US_part_): sql/02_load_raw.sql reads the country
+from the first two letters of each file name.
 
-file_count = 1
-current_file = f"{output_prefix}{file_count}.csv"
-current_size = 0
+Records are parsed with the csv module rather than read line by line: the trending data has
+video descriptions containing newlines inside quoted fields, and a naive line split can cut
+one record across two files.
+"""
+import argparse
+import csv
+import io
+import sys
+from pathlib import Path
 
-out = open(current_file, 'w', encoding='utf-8')
-out.write(header)  # write header to first file
 
-with open(input_file, 'r', encoding='utf-8') as f:
-    next(f)  # skip header
-    for line in f:
-        line_size = len(line.encode('utf-8'))
-        if (current_size + line_size) > (max_size_mb * 1024 * 1024):
+def split_csv(input_file, max_size_mb=200, prefix="part_", out_dir="."):
+    """Split input_file into <prefix>N.csv files of at most max_size_mb each. Returns the paths."""
+    max_bytes = int(max_size_mb * 1024 * 1024)
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    def encode_row(row):
+        buf = io.StringIO()
+        csv.writer(buf, lineterminator="\n").writerow(row)
+        return buf.getvalue().encode("utf-8")
+
+    paths = []
+    out = None
+    current_size = 0
+
+    def open_next():
+        nonlocal out, current_size
+        if out:
             out.close()
-            file_count += 1
-            current_file = f"{output_prefix}{file_count}.csv"
-            out = open(current_file, 'w', encoding='utf-8')
-            out.write(header)
-            current_size = 0
-        out.write(line)
-        current_size += line_size
+        path = out_dir / f"{prefix}{len(paths) + 1}.csv"
+        paths.append(path)
+        out = open(path, "wb")
+        out.write(header_bytes)
+        current_size = len(header_bytes)
 
-out.close()
-print(f"✅ Split complete: {file_count} files created.")
+    with open(input_file, encoding="utf-8", newline="") as f:
+        reader = csv.reader(f)
+        header_bytes = encode_row(next(reader))
+        open_next()
+        for row in reader:
+            data = encode_row(row)
+            # start a new file if this record would push us over, unless the file is still empty
+            if current_size + len(data) > max_bytes and current_size > len(header_bytes):
+                open_next()
+            out.write(data)
+            current_size += len(data)
+    out.close()
+    return paths
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
+    p.add_argument("input", nargs="?", default="US_youtube_trending_data.csv")
+    p.add_argument("--max-mb", type=float, default=200, help="max size per chunk in MB (default 200)")
+    p.add_argument("--prefix", default="part_", help="output file prefix (default part_)")
+    p.add_argument("--out-dir", default=".", help="output directory (default: current directory)")
+    args = p.parse_args(argv)
+
+    paths = split_csv(args.input, args.max_mb, args.prefix, args.out_dir)
+    print(f"Split complete: {len(paths)} files created.")
+    for path in paths:
+        print(f"  {path}")
+
+
+if __name__ == "__main__":
+    sys.exit(main())
