@@ -69,7 +69,7 @@ def peak_per_video(df):
     v["engagement"] = (v.likes + v.dislikes + v.comment_count) / v.view_count * 100
     v["category"] = v.categoryId.map(CATEGORIES).fillna("Category " + v.categoryId.astype(str))
     v["published"] = pd.to_datetime(v.publishedAt, utc=True, errors="coerce")
-    v["weekday"] = v.published.dt.dayofweek
+    v["weekday"] = v.published.dt.day_of_week
     v["hour"] = v.published.dt.hour
     v["year"] = v.published.dt.year
     v["tier"] = popularity_tier(v.view_count)

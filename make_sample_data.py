@@ -38,7 +38,7 @@ def make_country(code, n_videos, rng, start="2021-01-01", days=540):
         cat = rng.choice(cats, p=probs / probs.sum())
         _, eng, views = CATEGORY_PROFILE[cat]
         published = start + pd.Timedelta(minutes=int(rng.integers(0, days * 24 * 60)))
-        friday_boost = 1.12 if published.dayofweek == 4 else 1.0
+        friday_boost = 1.12 if published.day_of_week == 4 else 1.0
         peak_views = int(rng.lognormal(np.log(views), 1.0)) + 1000
         engagement = max(0.2, rng.normal(eng * friday_boost, eng * 0.35)) / 100
         title = " ".join(w for w in [rng.choice(OPENERS), rng.choice(SUBJECTS),
