@@ -4,6 +4,10 @@ target-version = "py310"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# fail on deprecations raised from this project's own code, so CI flags them before they break
+filterwarnings = [
+    "error::DeprecationWarning:(trending|sentiment|app|make_sample_data|findings_check|compare_countries|sentiment_analysis)",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
