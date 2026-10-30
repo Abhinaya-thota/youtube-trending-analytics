@@ -8,3 +8,6 @@ __pycache__/
 # OS / editor
 .DS_Store
 .vscode/
+.pytest_cache/
+.ruff_cache/
+.venv/

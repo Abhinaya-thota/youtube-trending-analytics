@@ -8,7 +8,7 @@ An analysis of what separates YouTube's trending videos in the US: which categor
 
 ## Workflow
 
-1. **Prepare:** split the large raw CSV into chunks under 200MB so it could be uploaded (`01_split_large_csv.py`), and check column schemas (`02_list_columns.py`).
+1. **Prepare:** split the large raw CSV into chunks under 200MB so it could be uploaded (`01_split_large_csv.py`), and check that the chunks share the same columns (`02_list_columns.py`).
 2. **Load and model:** load the data into **Snowflake** and join it to a category lookup table, giving the table the workbook reads (`US_YOUTUBE_VIDEOSFINAL` plus `CATEGORY_MAP`).
 3. **Visualize:** build four Tableau worksheets in `youtube_trending_dashboard.twb`:
    - Engagement by Category
@@ -34,6 +34,26 @@ pip install -r requirements.txt
 python findings_check.py data/US_youtube_trending_data.csv
 ```
 
+The prep scripts take paths as arguments too (run any of them with `--help`):
+
+```bash
+python 01_split_large_csv.py data/US_youtube_trending_data.csv --max-mb 200 --out-dir data/chunks
+python 02_list_columns.py data/chunks/part_*.csv     # exits non-zero if the schemas differ
+python 03_clean_older_us_dataset.py data/USvideos.csv -o data/clean_USvideos.csv
+```
+
+## Tests
+
+The tests use small synthetic CSVs, so they run without the Kaggle data:
+
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
+
+GitHub Actions runs the same lint and tests on every push (`.github/workflows/ci.yml`).
+
 ## Limitations
 
 - **US only.** Trending behavior in other countries may differ.
@@ -51,9 +71,13 @@ python findings_check.py data/US_youtube_trending_data.csv
 ├── 03_clean_older_us_dataset.py         # Cleaning for the older (2017-18) US dataset
 ├── findings_check.py                    # Reproduces the headline numbers in pandas
 ├── youtube_trending_dashboard.twb       # Tableau workbook (4 worksheets)
-└── requirements.txt
+├── tests/                               # pytest suite on synthetic data
+├── .github/workflows/ci.yml             # Lint + tests on every push
+├── pyproject.toml                       # ruff / pytest config
+├── requirements.txt
+└── requirements-dev.txt
 ```
 
 ## Tech Stack
 
-`Python (pandas)` `Snowflake` `SQL` `Tableau`
+`Python (pandas)` `pytest` `GitHub Actions` `Snowflake` `SQL` `Tableau`
