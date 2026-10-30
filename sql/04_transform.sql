@@ -1,0 +1,64 @@
+-- 04_transform.sql: build the tables the Tableau workbook reads.
+-- YOUTUBE_VIDEOS_ALL keeps every country; US_YOUTUBE_VIDEOSFINAL is the US slice with the exact
+-- columns the workbook expects. One row per video per trending day, like the raw data.
+--
+-- Definitions shared with trending.py:
+--   ENGAGEMENT_RATE = (likes + dislikes + comments) / views * 100
+--   POPULARITY_TIER = Viral >= 10M views, High >= 1M, Medium >= 100K, else Low
+--   SENTIMENT       = the workbook's keyword rule on the description (see sentiment.py for the
+--                     VADER title model used in Python)
+--   PUBLISH_HOUR    = hour of PUBLISHED_AT, UTC
+
+USE SCHEMA YT_DB.YT_SCHEMA;
+
+CREATE OR REPLACE TABLE YOUTUBE_VIDEOS_ALL AS
+SELECT
+  COUNTRY,
+  VIDEO_ID,
+  TITLE,
+  PUBLISHED_AT,
+  CHANNELID,
+  CHANNELTITLE,
+  CATEGORY_ID,
+  CAST(TRENDING_DATE AS DATE) AS TRENDING_DATE,
+  TAGS,
+  VIEWS,
+  LIKES,
+  DISLIKES,
+  COMMENT_COUNT,
+  THUMBNAIL_LINK,
+  COMMENTS_DISABLED,
+  RATINGS_DISABLED,
+  DESCRIPTION,
+  HOUR(PUBLISHED_AT) AS PUBLISH_HOUR,
+  -- cast before dividing: Snowflake integer division keeps only ~6 decimal places
+  CAST(LIKES AS DOUBLE) / NULLIF(VIEWS, 0) AS LIKES_TO_VIEWS_RATIO,
+  CAST(LIKES + DISLIKES + COMMENT_COUNT AS DOUBLE) * 100 / NULLIF(VIEWS, 0) AS ENGAGEMENT_RATE,
+  CASE
+    WHEN VIEWS >= 10000000 THEN 'Viral'
+    WHEN VIEWS >= 1000000 THEN 'High'
+    WHEN VIEWS >= 100000 THEN 'Medium'
+    ELSE 'Low'
+  END AS POPULARITY_TIER,
+  CASE
+    WHEN LOWER(DESCRIPTION) LIKE '%awesome%' THEN 'Positive'
+    WHEN LOWER(DESCRIPTION) LIKE '%fail%' THEN 'Negative'
+    ELSE 'Neutral'
+  END AS SENTIMENT
+FROM RAW_TRENDING
+WHERE VIDEO_ID IS NOT NULL;
+
+CREATE OR REPLACE TABLE US_YOUTUBE_VIDEOSFINAL AS
+SELECT
+  VIDEO_ID, TITLE, PUBLISHED_AT, CHANNELID, CHANNELTITLE, CATEGORY_ID, TRENDING_DATE, TAGS,
+  VIEWS, LIKES, DISLIKES, COMMENT_COUNT, THUMBNAIL_LINK, COMMENTS_DISABLED, RATINGS_DISABLED,
+  DESCRIPTION, PUBLISH_HOUR, LIKES_TO_VIEWS_RATIO, POPULARITY_TIER, SENTIMENT
+FROM YOUTUBE_VIDEOS_ALL
+WHERE COUNTRY = 'US';
+
+-- One row per video and country: the trending day with its highest view count.
+CREATE OR REPLACE VIEW VIDEO_PEAK AS
+SELECT *
+FROM YOUTUBE_VIDEOS_ALL
+WHERE VIEWS > 0
+QUALIFY ROW_NUMBER() OVER (PARTITION BY COUNTRY, VIDEO_ID ORDER BY VIEWS DESC, TRENDING_DATE DESC) = 1;
