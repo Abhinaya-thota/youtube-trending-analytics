@@ -127,10 +127,12 @@ def top_videos(v, n=10):
     return v.nlargest(n, "view_count")[cols].reset_index(drop=True)
 
 
-def summary(v):
-    """Headline numbers for one country (or any subset) of per-video rows."""
-    cat = by_category(v, min_videos=1)
-    eng = v.groupby("category").engagement.mean()
+def summary(v, min_share=0.01):
+    """Headline numbers for one country (or any subset) of per-video rows.
+    Categories with fewer than `min_share` of the videos can't be the top category, so a
+    handful of videos in a niche category doesn't outrank the big ones."""
+    cat = by_category(v, min_videos=max(1, int(len(v) * min_share)))
+    eng = cat.mean_engagement
     day = by_weekday(v)
     return {
         "videos": len(v),

@@ -26,8 +26,22 @@ Computed with `findings_check.py` from the raw US file, using one row per video 
 
 - **Views and engagement don't line up.** Music and Entertainment lead in total views (36.1B and 33.0B). Comedy ranks only 8th in views but **first in engagement (7.6%)**, followed by Music (6.6%) and People & Blogs (6.3%). Entertainment, #2 in views, sits mid-pack at 5.1%. Sports (2.2%) and News & Politics (1.8%) are the least engaging categories.
 - **Friday uploads had the highest engagement.** Average engagement for videos published on a Friday was 5.6%, against 4.8% to 5.2% on every other day, and Friday ranked first in **every year from 2020 to 2024**. Weekend uploads were slightly lower than weekdays (4.9% vs 5.2%).
+- **Friday's lead is real, but engagement is drifting down.** Friday's engagement fell every year: 6.5% (2020), 5.9%, 5.3%, 5.2%, 5.1% (2024). That suggests engagement on trending videos overall has been declining, which is worth confirming year by year.
+- **A title's tone barely matters.** Scored with VADER, 24% of titles read Positive, 54% Neutral and 22% Negative, and their engagement is almost identical: 5.0%, 5.2% and 5.1%. That 0.2-point spread is tiny next to the 1.8%–7.6% spread between categories, so *what* a video is about matters far more than how its title sounds. The workbook's old keyword rule labelled 97.6% of videos Neutral, so it couldn't have shown this. (`sentiment_analysis.py`)
 
-Title sentiment and the country comparison are new; run `sentiment_analysis.py` and `compare_countries.py` on the real files to get their results.
+### How countries compare
+
+From `compare_countries.py` on the US, UK (GB), Canada (CA) and Brazil (BR) files:
+
+| | US | GB | CA | BR |
+|---|---|---|---|---|
+| Trending videos | 47,124 | 47,591 | 50,867 | 39,501 |
+| Mean engagement | 5.1% | 4.8% | 5.3% | **7.8%** |
+| Best publish day (UTC) | Fri | Fri | Fri | Tue |
+| Viral share (≥ 10M views) | 4.1% | 4.1% | 4.3% | 2.7% |
+
+- **The US, UK and Canada behave almost identically.** In all three, Comedy is the most engaging category (7.5%–8.0%), News & Politics (about 1.8%) and Sports (about 2.3%) are the least, and **Friday is the best day to publish**. The US findings above aren't a US quirk.
+- **Brazilian audiences engage far more.** Brazil's engagement is higher in every category except Music, often nearly double (Howto & Style 10.6% vs 5.5%–5.9%, Science & Technology 8.4% vs about 4.6%). Music engagement is about the same in all four countries (6.6%–6.9%). Brazil also has fewer mega-hits (2.7% viral vs about 4%), and its best publish day is Tuesday.
 
 ## Interactive dashboard
 
@@ -108,9 +122,11 @@ They cover the prep scripts, the metrics, sentiment, the country comparison, the
 
 ## Limitations
 
-- **Headline findings are US only.** The tools now support other countries, but the findings above haven't been re-run for them.
+- **Four countries compared.** The dataset has 11 countries; the comparison above covers the US, UK, Canada and Brazil. `compare_countries.py` runs on any of the others.
+- **Don't add views across countries.** The same video often trends in several countries, so per-country view totals overlap.
+- **"Most engaging category" only counts categories with at least 1% of a country's videos**, so a few videos in a niche category can't top the ranking.
 - **Dislike counts are mostly zero.** About 36% of rows have a non-zero dislike count, which fits YouTube hiding public dislikes in late 2021. Engagement rate is almost unchanged if dislikes are left out, and the findings above hold either way.
-- **Sentiment is English-only and title-based.** VADER is a lexicon model, not a trained classifier; it misses sarcasm and most slang, and is not meaningful for non-English titles.
+- **Sentiment is English-only and title-based.** VADER is a lexicon model, not a trained classifier; it misses sarcasm and most slang, reads hype words common in gaming and fight titles ("DESTROYS", "BRUTALLY") as negative, and is not meaningful for non-English titles.
 - **Publish day and hour are in UTC** (from the dataset's `publishedAt` field), not the uploader's local time.
 - **Popularity tier thresholds** (10M / 1M / 100K) are this repo's choice; the original thresholds behind the workbook's `POPULARITY_TIER` column weren't kept.
 - The workbook's data connection points at Snowflake, and the account details have been replaced with placeholders. Tableau will ask you to reconnect to your own data source, and the worksheets will only render once you do.
