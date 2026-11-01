@@ -71,3 +71,20 @@ def test_compare_countries_end_to_end(tmp_path, capsys):
 
     with pytest.raises(SystemExit, match="No file for IN"):
         compare.load_countries(tmp_path, ["IN"])
+
+
+def test_summary_ignores_tiny_categories():
+    # 199 Music videos at 5% engagement and 1 Nonprofits video at 50%: Nonprofits is under 1%
+    n = 200
+    df = pd.DataFrame({
+        "video_id": [f"v{i}" for i in range(n)],
+        "categoryId": [10] * 199 + [29],
+        "publishedAt": ["2021-01-01T10:00:00Z"] * n,
+        "view_count": [1000] * n,
+        "likes": [50] * 199 + [500],
+        "dislikes": [0] * n,
+        "comment_count": [0] * n})
+    s = trending.summary(trending.peak_per_video(df))
+    assert s["top_category_by_engagement"] == "Music"
+    assert trending.summary(trending.peak_per_video(df), min_share=0)["top_category_by_engagement"] \
+        == "Nonprofits & Activism"
