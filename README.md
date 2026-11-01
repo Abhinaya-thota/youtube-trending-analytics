@@ -33,17 +33,27 @@ Computed with `findings_check.py` from the raw US file, using one row per video 
 
 ### How countries compare
 
-From `compare_countries.py` on the US, UK (GB), Canada (CA) and Brazil (BR) files:
+From `compare_countries.py` on all 11 countries in the dataset, sorted by mean engagement:
 
-| | US | GB | CA | BR |
-|---|---|---|---|---|
-| Trending videos | 47,124 | 47,591 | 50,867 | 39,501 |
-| Mean engagement | 5.1% | 4.8% | 5.3% | **7.8%** |
-| Best publish day (UTC) | Fri | Fri | Fri | Tue |
-| Viral share (≥ 10M views) | 4.1% | 4.1% | 4.3% | 2.7% |
+| Country | Trending videos | Mean engagement | Top category by views | Most engaging category | Best publish day (UTC) | Viral share (≥ 10M views) |
+|---|---|---|---|---|---|---|
+| Brazil (BR) | 39,501 | **7.8%** | Music | Comedy | Tue | 2.7% |
+| Russia (RU) | 131,234 | 6.8% | Entertainment | Science & Technology | Thu | 1.0% |
+| France (FR) | 54,166 | 6.4% | Music | Comedy | Sun | 1.9% |
+| Mexico (MX) | 32,436 | 6.2% | Music | Comedy | Tue | 4.6% |
+| Germany (DE) | 55,467 | 5.4% | Music | Comedy | Thu | 3.4% |
+| Canada (CA) | 50,867 | 5.3% | Entertainment | Comedy | Fri | 4.3% |
+| United States (US) | 47,124 | 5.1% | Music | Comedy | Fri | 4.1% |
+| India (IN) | 78,844 | 5.1% | Entertainment | Gaming | Sat | 4.2% |
+| United Kingdom (GB) | 47,591 | 4.8% | Entertainment | Comedy | Fri | 4.1% |
+| South Korea (KR) | 28,249 | 3.1% | Music | Music | Wed | 2.5% |
+| Japan (JP) | 32,094 | **3.0%** | Music | Music | Mon | 1.9% |
 
-- **The US, UK and Canada behave almost identically.** In all three, Comedy is the most engaging category (7.5%–8.0%), News & Politics (about 1.8%) and Sports (about 2.3%) are the least, and **Friday is the best day to publish**. The US findings above aren't a US quirk.
-- **Brazilian audiences engage far more.** Brazil's engagement is higher in every category except Music, often nearly double (Howto & Style 10.6% vs 5.5%–5.9%, Science & Technology 8.4% vs about 4.6%). Music engagement is about the same in all four countries (6.6%–6.9%). Brazil also has fewer mega-hits (2.7% viral vs about 4%), and its best publish day is Tuesday.
+- **Comedy is the most engaging category almost everywhere:** in 7 of 11 countries. The exceptions are India (Gaming, 9.0%), Russia (Science & Technology, 9.0%), and Japan and South Korea (Music).
+- **The Friday effect is English-speaking.** Friday is the best publish day only in the US, UK and Canada; the other 8 countries are spread across every other day of the week. Those three countries otherwise behave almost identically too (Comedy top, News and Sports bottom), so the US findings hold across English-speaking markets but not globally. Days are in UTC, which shifts local days for countries far from UTC (Japan and Korea are UTC+9), so treat the non-English best days as rough.
+- **Engagement levels differ a lot by country**, from 7.8% in Brazil to 3.0% in Japan. Brazil has the highest rate in 9 of the 14 categories. Japan and South Korea are low in almost every category, with Music the clear exception (5.2% and 7.0%, against 6.6% in the US), possibly reflecting fan-driven engagement with music videos. Because baselines differ this much, compare categories within a country rather than raw rates across countries.
+- **News & Politics and Sports are among the least engaging categories almost everywhere.** News is the lowest or second-lowest category in every country except South Korea, and Sports sits at 1.4%–4.2% everywhere except Brazil (6.3%).
+- **Russia has the most trending videos but the fewest mega-hits:** 131,234 videos, over twice most countries, yet only 1.0% reach 10M views. Mexico has the highest viral share (4.6%), and India the most total views (194B).
 
 ## Interactive dashboard
 
@@ -74,7 +84,7 @@ Screenshots from the real data (US unless noted):
 **Publish timing:** Friday leads, and the heatmap shows engagement by publish hour.
 ![Engagement by publish weekday and by weekday and hour](docs/screenshots/publish_timing.png)
 
-**Countries:** Brazil (BR) engages far more than the US, UK (GB) and Canada (CA) in almost every category.
+**Countries** (4 of the 11): Brazil (BR) engages far more than the US, UK (GB) and Canada (CA) in almost every category.
 ![Mean engagement rate by category for BR, CA, GB and US](docs/screenshots/countries.png)
 
 ## Title sentiment
@@ -135,7 +145,7 @@ They cover the prep scripts, the metrics, sentiment, the country comparison, the
 
 ## Limitations
 
-- **Four countries compared.** The dataset has 11 countries; the comparison above covers the US, UK, Canada and Brazil. `compare_countries.py` runs on any of the others.
+- **Engagement norms vary by country.** Liking and commenting habits differ between countries and languages, so cross-country differences in engagement partly reflect audience culture, not just content.
 - **Don't add views across countries.** The same video often trends in several countries, so per-country view totals overlap.
 - **"Most engaging category" only counts categories with at least 1% of a country's videos**, so a few videos in a niche category can't top the ranking.
 - **Dislike counts are mostly zero.** About 36% of rows have a non-zero dislike count, which fits YouTube hiding public dislikes in late 2021. Engagement rate is almost unchanged if dislikes are left out, and the findings above hold either way.
