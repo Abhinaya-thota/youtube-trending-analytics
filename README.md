@@ -2,6 +2,8 @@
 
 An analysis of what separates YouTube's trending videos: which categories draw the most views, which ones draw the most engagement, whether publish timing matters, and how title sentiment and country change the picture. The data is prepared in Python, modelled in Snowflake, and explored in Tableau or in an interactive Streamlit dashboard.
 
+![Dashboard overview: headline numbers for US trending videos and engagement by title sentiment](docs/screenshots/overview_sentiment.png)
+
 ## Data
 
 [YouTube Trending Video Dataset](https://www.kaggle.com/datasets/rsrishav/youtube-trending-video-dataset) (Kaggle). The US file has **268,787 daily trending records covering 47,142 unique videos**, published between August 2020 and April 2024. The same dataset has files for other countries (GB, CA, IN, DE, FR, BR, MX, JP, KR, RU) in the same layout. The data is not included in this repo (the US file alone is about 400MB): download it and put the `<CC>_youtube_trending_data.csv` files in `data/`. An earlier iteration of the project used the older [2017-18 trending dataset](https://www.kaggle.com/datasets/datasnaek/youtube-new).
@@ -63,6 +65,17 @@ Sidebar filters for country, publish date range and categories drive six tabs:
 | Countries | Headline numbers per country and a category × country engagement heatmap |
 
 If `data/` has no Kaggle files, the dashboard falls back to `data/sample/` and shows a banner saying the data is synthetic.
+
+Screenshots from the real data (US unless noted):
+
+**Categories:** the most-viewed categories (Music, Entertainment) aren't the most engaging (Comedy).
+![Total views and engagement rate by category](docs/screenshots/categories.png)
+
+**Publish timing:** Friday leads, and the heatmap shows engagement by publish hour.
+![Engagement by publish weekday and by weekday and hour](docs/screenshots/publish_timing.png)
+
+**Countries:** Brazil (BR) engages far more than the US, UK (GB) and Canada (CA) in almost every category.
+![Mean engagement rate by category for BR, CA, GB and US](docs/screenshots/countries.png)
 
 ## Title sentiment
 
@@ -145,6 +158,7 @@ They cover the prep scripts, the metrics, sentiment, the country comparison, the
 ├── make_sample_data.py                  # Synthetic Kaggle-style files for demos and tests
 ├── app.py                               # Streamlit dashboard
 ├── sql/                                 # Snowflake setup, load, transform and analysis
+├── docs/screenshots/                    # Dashboard screenshots used in this README
 ├── youtube_trending_dashboard.twb       # Tableau workbook (4 worksheets)
 ├── tests/                               # pytest suite on synthetic data
 ├── .github/workflows/ci.yml             # Lint, tests and script runs on every push
