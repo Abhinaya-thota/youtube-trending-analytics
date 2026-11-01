@@ -84,8 +84,8 @@ Screenshots from the real data (US unless noted):
 **Publish timing:** Friday leads, and the heatmap shows engagement by publish hour.
 ![Engagement by publish weekday and by weekday and hour](docs/screenshots/publish_timing.png)
 
-**Countries** (4 of the 11): Brazil (BR) engages far more than the US, UK (GB) and Canada (CA) in almost every category.
-![Mean engagement rate by category for BR, CA, GB and US](docs/screenshots/countries.png)
+**Countries:** engagement by category across all 11 countries. Brazil (BR) is darkest almost everywhere, Japan (JP) and South Korea (KR) are pale except for Music, and News & Politics and Sports are light in nearly every country. Blank cells are categories with too few videos in that country.
+![Mean engagement rate by category for all 11 countries](docs/screenshots/countries.png)
 
 ## Title sentiment
 
