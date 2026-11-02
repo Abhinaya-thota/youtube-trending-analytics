@@ -74,7 +74,17 @@ Sidebar filters for country, publish date range and categories drive six tabs:
 | Sentiment | Share of videos and engagement by title sentiment |
 | Countries | Headline numbers per country and a category × country engagement heatmap |
 
-If `data/` has no Kaggle files, the dashboard falls back to `data/sample/` and shows a banner saying the data is synthetic.
+The dashboard looks for data in this order: the raw Kaggle files in `data/`; the compact copy of the real data in `online_data/`; and finally the synthetic files in `data/sample/`, with a banner saying the data is synthetic.
+
+### Online version
+
+The raw files are too big for GitHub, so the online dashboard reads a compact copy of the real data in `online_data/`: one row per video (its peak-views day) plus weekly views per video, a few MB per country. `make_online_data.py` builds it from the raw files, and the tests check it gives the dashboard exactly the same numbers as the raw files.
+
+```bash
+python make_online_data.py data        # writes online_data/<CC>_videos.parquet and <CC>_weekly.parquet
+```
+
+The app is deployed on [Streamlit Community Cloud](https://streamlit.io/cloud) straight from this repository (`app.py` on `main`).
 
 Screenshots from the real data (US unless noted):
 
@@ -166,6 +176,8 @@ They cover the prep scripts, the metrics, sentiment, the country comparison, the
 ├── sentiment_analysis.py                # Engagement by title sentiment
 ├── compare_countries.py                 # Headline numbers across countries
 ├── make_sample_data.py                  # Synthetic Kaggle-style files for demos and tests
+├── make_online_data.py                  # Compact copy of the real data for the online dashboard
+├── online_data/                         # That compact copy (parquet), read by the online dashboard
 ├── app.py                               # Streamlit dashboard
 ├── sql/                                 # Snowflake setup, load, transform and analysis
 ├── docs/screenshots/                    # Dashboard screenshots used in this README

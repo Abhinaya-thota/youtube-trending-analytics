@@ -109,17 +109,43 @@ def best_day_per_year(v):
     return out
 
 
-def views_over_time(df, freq="W"):
-    """Total views across all trending rows, per trending period (daily rows summed by `freq`).
-    Periods only partly covered by the data (usually the first and last) are dropped, so the
-    line doesn't dip at the edges."""
-    d = df.assign(date=pd.to_datetime(df.trending_date, utc=True, errors="coerce").dt.tz_localize(None))
+def weekly_views_by_video(df, freq="W"):
+    """Views per video per trending period (daily rows summed by `freq`), labelled by the
+    period's last day. Periods only partly covered by the data (usually the first and last)
+    are dropped, so totals don't dip at the edges."""
+    d = df[["video_id", "view_count"]].assign(
+        date=pd.to_datetime(df.trending_date, utc=True, errors="coerce").dt.tz_localize(None))
     d = d.dropna(subset=["date"])
-    out = d.set_index("date").view_count.resample(freq).sum().rename("views").reset_index()
-    periods = out.date.dt.to_period(freq)
+    periods = d.date.dt.to_period(freq)
     complete = (periods.dt.start_time >= d.date.min().normalize()) & \
                (periods.dt.end_time.dt.normalize() <= d.date.max())
-    return out[complete].reset_index(drop=True)
+    d = d[complete].assign(date=periods[complete].dt.end_time.dt.normalize())
+    return (d.groupby(["video_id", "date"], as_index=False).view_count.sum()
+            .rename(columns={"view_count": "views"}))
+
+
+def views_over_time(df, freq="W"):
+    """Total views across all trending rows, per complete trending period."""
+    weekly = weekly_views_by_video(df, freq)
+    return weekly.groupby("date", as_index=False).views.sum()
+
+
+# Compact copy of the data for the online dashboard (see make_online_data.py): per country, one
+# row per video with the raw columns the dashboard needs, plus weekly views per video.
+COMPACT_DIR = "online_data"
+COMPACT_COLUMNS = CORE_COLUMNS + ["title", "channelTitle"]
+COMPACT_PATTERN = re.compile(r"^([A-Z]{2})_videos\.parquet$")
+
+
+def find_compact_files(data_dir=COMPACT_DIR):
+    """{country code: (videos path, weekly path)} for every complete pair in data_dir."""
+    files = {}
+    for path in sorted(Path(data_dir).glob("*_videos.parquet")):
+        m = COMPACT_PATTERN.match(path.name)
+        weekly = path.with_name(f"{m.group(1)}_weekly.parquet") if m else None
+        if m and weekly.exists():
+            files[m.group(1)] = (path, weekly)
+    return files
 
 
 def top_videos(v, n=10):
