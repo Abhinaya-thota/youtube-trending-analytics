@@ -47,3 +47,23 @@ def test_app_explains_missing_data(tmp_path, monkeypatch):
     at = AppTest.from_file(str(tmp_path / "app.py"), default_timeout=60).run()
     assert not at.exception
     assert "make_sample_data.py" in at.error[0].value
+
+
+def test_app_uses_compact_online_data(tmp_path, monkeypatch):
+    """Online deployment: no data/ folder, only the compact files in online_data/."""
+    online = load_script("make_online_data.py")
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    sample.make_country("US", 150, np.random.default_rng(4)).to_csv(
+        raw_dir / "US_youtube_trending_data.csv", index=False)
+    online.main([str(raw_dir), "--out-dir", str(tmp_path / "online_data")])
+    for f in ("app.py", "trending.py", "sentiment.py"):
+        shutil.copy(ROOT / f, tmp_path / f)
+    monkeypatch.chdir(tmp_path)
+
+    at = AppTest.from_file(str(tmp_path / "app.py"), default_timeout=60).run()
+    assert not at.exception
+    assert not at.error
+    assert any("compact copy" in c.value for c in at.caption)
+    assert not any("synthetic" in w.value for w in at.warning)
+    assert at.metric[0].value == "150"

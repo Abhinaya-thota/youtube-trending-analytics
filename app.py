@@ -3,7 +3,10 @@ Interactive dashboard for the trending analysis: a Python alternative to the Tab
 that reads the raw Kaggle files directly (no Snowflake connection needed).
 
 Usage:  streamlit run app.py
-        (put <CC>_youtube_trending_data.csv files in data/, or run make_sample_data.py first)
+
+Data, in order of preference: <CC>_youtube_trending_data.csv files in data/; the compact copy in
+online_data/ (made by make_online_data.py, used by the online deployment); or the synthetic files
+from make_sample_data.py in data/sample/.
 """
 from pathlib import Path
 
@@ -24,9 +27,14 @@ st.set_page_config(page_title="YouTube Trending Analytics", page_icon="📈", la
 
 
 @st.cache_data(show_spinner="Loading trending data...")
-def load_country(path, code):
-    df = trending.load(path, trending.CORE_COLUMNS + trending.DETAIL_COLUMNS, country=code)
-    return df, trending.peak_per_video(df)
+def load_country(source, code):
+    """(per-video rows, weekly views per video) from a raw CSV path or a compact pair."""
+    if isinstance(source, tuple):
+        videos_path, weekly_path = source
+        return (trending.peak_per_video(pd.read_parquet(videos_path)),
+                pd.read_parquet(weekly_path))
+    df = trending.load(source, trending.CORE_COLUMNS + trending.DETAIL_COLUMNS, country=code)
+    return trending.peak_per_video(df), trending.weekly_views_by_video(df)
 
 
 @st.cache_data(show_spinner="Scoring title sentiment...")
@@ -46,10 +54,13 @@ def bar(data, x, y, x_title, y_title, tooltip, sort="-x"):
 st.sidebar.header("Data")
 data_dir = st.sidebar.text_input("Data folder", "data",
                                  help="Folder with Kaggle files named <CC>_youtube_trending_data.csv")
-files = trending.find_country_files(data_dir)
-using_sample = False
+files = {c: str(p) for c, p in trending.find_country_files(data_dir).items()}
+using_compact = using_sample = False
+if not files:
+    files = {c: (str(v), str(w)) for c, (v, w) in trending.find_compact_files().items()}
+    using_compact = bool(files)
 if not files and Path("data/sample").is_dir():
-    files = trending.find_country_files("data/sample")
+    files = {c: str(p) for c, p in trending.find_country_files("data/sample").items()}
     using_sample = bool(files)
 
 st.title("YouTube Trending Analytics")
@@ -58,6 +69,10 @@ if not files:
              "[Kaggle dataset](https://www.kaggle.com/datasets/rsrishav/youtube-trending-video-dataset)"
              " into `data/`, or run `python make_sample_data.py` to try the dashboard on synthetic data.")
     st.stop()
+if using_compact:
+    st.caption("Real Kaggle data (Aug 2020 – Apr 2024), from the compact copy in `online_data/`: "
+               "one row per video plus weekly views. [Source and method on GitHub]"
+               "(https://github.com/Abhinaya-thota/youtube-trending-analytics)")
 if using_sample:
     st.warning("Showing **synthetic sample data** from `data/sample` (made by make_sample_data.py). "
                "The numbers are random; add the real Kaggle files to `data/` for real results.")
@@ -65,7 +80,7 @@ if using_sample:
 codes = list(files)
 country = st.sidebar.selectbox("Country", codes, index=codes.index("US") if "US" in codes else 0,
                                format_func=lambda c: f"{c} - {trending.COUNTRY_NAMES.get(c, c)}")
-raw, videos = load_country(str(files[country]), country)
+videos, weekly_by_video = load_country(files[country], country)
 
 # ---------- filters ----------
 st.sidebar.header("Filters")
@@ -78,7 +93,6 @@ min_videos = st.sidebar.number_input("Hide categories with fewer videos than", 1
 
 mask = videos.published.dt.date.between(start, end) & videos.category.isin(picked)
 v = videos[mask]
-raw_f = raw[raw.video_id.isin(v.video_id)]
 if v.empty:
     st.info("No videos match these filters.")
     st.stop()
@@ -144,7 +158,8 @@ with tabs[1]:
 # ---------- views over time ----------
 with tabs[2]:
     st.subheader("Weekly views across trending videos")
-    weekly = trending.views_over_time(raw_f, "W")
+    weekly = (weekly_by_video[weekly_by_video.video_id.isin(v.video_id)]
+              .groupby("date", as_index=False).views.sum())
     hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False)
     base = alt.Chart(weekly).encode(x=alt.X("date:T", title="Trending week"))
     line = base.mark_line(color=BLUE, strokeWidth=2).encode(
@@ -213,7 +228,7 @@ with tabs[5]:
                 "folder to compare countries.")
     else:
         st.subheader("Country comparison")
-        per_country = {c: load_country(str(p), c)[1] for c, p in files.items()}
+        per_country = {c: load_country(src, c)[0] for c, src in files.items()}
         summ = pd.DataFrame({c: trending.summary(x) for c, x in per_country.items()}).T
         summ.index.name = "Country"
         st.dataframe(summ.rename(columns={
