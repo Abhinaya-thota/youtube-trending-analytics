@@ -2,6 +2,8 @@
 
 An analysis of what separates YouTube's trending videos: which categories draw the most views, which ones draw the most engagement, whether publish timing matters, and how title sentiment and country change the picture. The data is prepared in Python, modelled in Snowflake, and explored in Tableau or in an interactive Streamlit dashboard.
 
+**[Open the live dashboard](https://you-tube-trending-analytics.streamlit.app/)**: no install needed. It covers all 11 countries and runs on the real data.
+
 ![Dashboard overview: headline numbers for US trending videos and engagement by title sentiment](docs/screenshots/overview_sentiment.png)
 
 ## Data
@@ -84,7 +86,7 @@ The raw files are too big for GitHub, so the online dashboard reads a compact co
 python make_online_data.py data        # writes online_data/<CC>_videos.parquet and <CC>_weekly.parquet
 ```
 
-The app is deployed on [Streamlit Community Cloud](https://streamlit.io/cloud) straight from this repository (`app.py` on `main`).
+The live app is at **https://you-tube-trending-analytics.streamlit.app/**, deployed on [Streamlit Community Cloud](https://streamlit.io/cloud) straight from this repository (`app.py` on `main`). It sleeps after a few days without visitors; opening the link wakes it in about a minute.
 
 Screenshots from the real data (US unless noted):
 
